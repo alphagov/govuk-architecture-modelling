@@ -30,6 +30,5 @@ object App {
   fun writeToFile(workspace: Workspace) {
     val targetFile = File(EXPORT_LOCATION, "structurizr-${workspace.id}-local.json")
     WorkspaceUtils.saveWorkspaceToJson(workspace, targetFile)
-    println("Wrote workspace to '$targetFile'")
   }
 }

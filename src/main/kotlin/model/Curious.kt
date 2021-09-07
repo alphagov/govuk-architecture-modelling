@@ -28,8 +28,8 @@ class Curious private constructor() {
       }
 
       DPS = model.addSoftwareSystem(
-        "DPS - used by Digital Prison team applications and services",
-        "HTTPS"
+        "DPS",
+        "used by Digital Prison team applications and services/HTTPS"
       ).apply {
         uses(curiousApi, "connects to", "RestHTML")
       }

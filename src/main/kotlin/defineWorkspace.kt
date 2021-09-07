@@ -1,11 +1,9 @@
 package uk.gov.justice.hmpps.architecture
 
 import com.structurizr.Workspace
-import com.structurizr.model.CreateImpliedRelationshipsUnlessSameRelationshipExistsStrategy
-import com.structurizr.model.Enterprise
-import com.structurizr.model.Location
-import com.structurizr.model.Model
+import com.structurizr.model.*
 import com.structurizr.view.ViewSet
+import uk.gov.justice.hmpps.architecture.annotations.Tags
 
 private val MODEL_ITEMS = listOf(
   AnalyticalPlatform,
@@ -95,8 +93,56 @@ fun defineWorkspace(): Workspace {
   defineRelationships()
   defineViews(workspace.model, workspace.views)
   defineStyles(workspace.views.configuration.styles)
-  defineDocumentation(workspace)
-  pullADRs(workspace)
 
+  workspace.model.softwareSystems.forEach { sys ->
+    println(
+      """---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ${backstageId(sys)}
+  title: "${sys.name}"
+  description: "${sys.description}"
+spec:
+  owner: hmpps-undefined
+      """.trimIndent()
+    )
+    sys.containers.forEach { c ->
+      val lifecycle = if (c.hasTag(Tags.DEPRECATED.name)) "deprecated" else "production"
+      println(
+        """---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${backstageId(c)}
+  title: "${c.name}"
+  description: "${c.description}"
+spec:
+  type: service
+  lifecycle: $lifecycle
+  owner: hmpps-undefined
+        """.trimIndent()
+      )
+      val containers = c.relationships.map { it.destination }.filterIsInstance<Container>()
+      if (containers.isNotEmpty()) {
+        println("  dependsOn:")
+      }
+      containers.forEach { c ->
+        println("    - Component:${backstageId(c)}")
+      }
+    }
+  }
   return workspace
+}
+
+fun backstageId(s: SoftwareSystem): String {
+  return xbackstageId(s.name)
+}
+
+fun backstageId(c: Container): String {
+  return xbackstageId("s" + c.softwareSystem.id + "_" + c.name)
+}
+
+private fun xbackstageId(name: String): String {
+  return name.lowercase().replace(Regex("""[^a-z0-9]+"""), "-")
 }
