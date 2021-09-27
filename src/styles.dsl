@@ -8,18 +8,27 @@ styles {
     background #08427b
     color #ffffff
   }
-  
+
   element Database {
     shape Cylinder
   }
 
-  element CandidateForDeprecation {
+  element Queue {
+    shape Pipe
+  }
+
+  // Styles for discussion
+  element QueryCandidateForDeprecation {
     background #FFFF00
   }
 
   element QueryOwnedByPublishing {
     background #FFA500
   }
+
+  # element QueryArchitecturalSmell {
+  #   background #B5651D
+  # }
 
 
 }
