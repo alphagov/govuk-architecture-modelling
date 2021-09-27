@@ -1,5 +1,9 @@
 workspace "GOV.UK" "The GOV.UK programme within GDS" {
 
+  // Use hierarchical identifiers to allow shorter names within containers (e.g. "mysql").
+  // The alternative (by removing the following line) is flat, so all identifiers must be unique (e.g. "publisher_signon_mysql"
+  !identifiers hierarchical
+
   model {
     // Dependencies outside GOV.UK
     splunk = softwareSystem "Splunk" "Log aggregator for Cyber/Security groups"
@@ -11,17 +15,18 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
 
         publishing_platform = softwareSystem "Publishing Platform" {
 
+          // TODO Signon calls out to Gds:API organisations. Which app is this?
           signon = container "Signon" {
             url https://github.com/alphagov/signon
             tags QueryOwnedByPublishing
 
-            -> splunk "Sends log events"
-
-            /*
-              MySQL database for users
-              Redis for Sidekiq
-              Calls out to Gds:API organisations/. TODO which app is this?
-            */
+            mysql = component "MySQL DB" "Persists user data" "MySQL" Database
+            redis = component "Redis" "Store for sidekiq jobs" "Redis" Database
+            component "Signon app" "Store for sidekiq jobs" "Rails" {
+              -> redis
+              -> mysql
+              -> splunk "Sends log events"
+            }
           }
 
           link_checker_api = container "Link Checker API" "Determines whether a batch of URIs are things that should be linked to" "Rails" {
@@ -72,7 +77,16 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
 
             content_publisher = container "Content Publisher" "The newest content publishing app" "Rails" {
               url https://github.com/alphagov/content-publisher
-              -> publishing_api "Create & update content"
+
+
+              mysql = component "MySQL DB" "Persists user data" "MySQL" Database
+              redis = component "Redis" "Store for sidekiq jobs" "Redis" Database
+              component "Signon app" "Store for sidekiq jobs" "Rails" {
+                -> redis
+                -> mysql
+
+                -> publishing_api "Create & update content"
+              }
             }
 
             manuals_publisher = container "Manuals Publisher" "Publish manual pages on GOV.UK" "Rails" {
@@ -104,13 +118,13 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
 
       group "Content Design" {
         content_designer = person "A GOV.UK Content Design team member" {
-          -> publisher "Creates and manages mainstream content"
-          -> content_publisher "Creates and manages TODO content"
-          -> collections_publisher "Creates and manages mainstream content"
-          -> travel_advice_publisher "Creates and manages mainstream content"
-          -> service_manual_publisher "Creates and manages mainstream content"
-          -> manuals_publisher "Creates and manages mainstream content"
-          -> whitehall "Creates and manages mainstream content"
+          -> publishing_platform.publisher "Creates and manages mainstream content"
+          -> publishing_platform.content_publisher "Creates and manages TODO content"
+          -> publishing_platform.collections_publisher "Creates and manages mainstream content"
+          -> publishing_platform.travel_advice_publisher "Creates and manages mainstream content"
+          -> publishing_platform.service_manual_publisher "Creates and manages mainstream content"
+          -> publishing_platform.manuals_publisher "Creates and manages mainstream content"
+          -> publishing_platform.whitehall "Creates and manages mainstream content"
         }
       }
 
@@ -125,12 +139,12 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
     // Things outside GDS
 
     external_content_designer = person "Content author (non-GDS)" {
-      -> whitehall "Creates and manages content"
-      -> content_publisher "Creates and manages TODO content"
+      -> publishing_platform.whitehall "Creates and manages content"
+      -> publishing_platform.content_publisher "Creates and manages TODO content"
     }
 
     external_hmrc_cms = softwareSystem "HMRC internal content management system" {
-      -> hmrc_manuals_api "Creates and updates manual sections" "REST"
+      -> publishing_platform.hmrc_manuals_api "Creates and updates manual sections" "REST"
     }
 
     external_hmrc_manual_editor = person "HMRC Manual editor" {
