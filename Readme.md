@@ -18,3 +18,13 @@ brew install structurizr-cli plantuml
 - `make`: remove plantuml and diagrams, and generate new ones.
 - `make build`: generate PlantUML output and generate PNG diagrams.
 - `make clean`: remove generated outputfrom from `plantuml/` and `diagrams/`.
+
+# Pushing diagrams to Structurizr
+
+These diagrams are available on [Structurizr](https://structurizr.com/workspace/69782).
+
+To push diagrams to Structurizr, you'll need a workspace, with a API key and secret. Then you can run the following:
+
+```
+STRUCTURIZR_KEY=XXXX STRUCTURIZR_SECRET=YYYY STRUCTURIZR_WORKSPACE=ZZZZ make push
+```
