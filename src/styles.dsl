@@ -8,6 +8,11 @@ styles {
     background #08427b
     color #ffffff
   }
+  
+  element Database {
+    shape Cylinder
+  }
+
   element CandidateForDeprecation {
     background #FFFF00
   }
@@ -15,4 +20,6 @@ styles {
   element QueryOwnedByPublishing {
     background #FFA500
   }
+
+
 }
