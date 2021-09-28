@@ -14,6 +14,10 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
       group "Publishing" {
 
         publishing_platform = softwareSystem "Publishing Platform" {
+          search = container "Search " {
+            tags QueryOwnedByPublishing
+            search_api = component "Search API" "TODO!"
+          }
 
           // TODO Signon calls out to Gds:API organisations. Which app is this?
           signon = container "Signon" "Single sign-on service for GOV.UK" {
@@ -28,6 +32,11 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               -> mysql
               -> splunk "Sends log events"
             }
+          }
+
+          account_api = container "Account API" {
+            // TODO this is referenced in https://github.com/alphagov/email-alert-api/blob/92021c3e26277545f2fb99336695aed56ab781a4/app/controllers/subscribers_govuk_account_controller.rb
+            // Is it different to Signon?
           }
 
           router_container = container "Router" "Maps paths to content on GOV.UK to publishing apps" {
@@ -60,29 +69,70 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
             tags QueryOwnedByPublishing, QueryCandidateForDeprecation
           }
 
-          content_store = container "Content Store" "TODO" "Go" {
+          content_store_container = container "Content Store" "TODO" {
             url https://github.com/alphagov/content-store
+            tags QueryOwnedByPublishing
+
+            database = component "MongoDB" "Store for content" "MongoDB" Database
+            content_store = component "Content Store" "" "Rails" {
+              -> database "Stores and retrieves content"
+              -> router_container.router_api "Add and delete routes and rendering apps"
+              -> router_container.router_api "Look up routes to idenfity inconsistent redirects"
+            }
           }
 
-          publishing_api_container = container "Publishing API" "TODO" "Rails" {
+          publishing_api_container = container "Publishing API" "TODO" {
             url https://github.com/alphagov/publishing-api
 
             database = component "PostgreSQL DB" "Persists user data" "Postgres" Database
             redis = component "Redis" "Store for sidekiq jobs" "Redis" Database
-            rabbitmq = component "Queue" "Queue to publish publishing events" "RabbitMQ" Queue
             s3 = component "S3" "Store for images, videos & file attachments" "AWS S3" 
+
+            event_queue = component "Queue" "Queue to publish publishing events" "RabbitMQ" Queue
 
             publishing_api = component "Publishing API" "" "Rails" {
               -> database
               -> redis
               -> s3
 
-              -> content_store "Pushes published content to the draft store"
-              -> content_store "Pushes published content to the published store"
-              -> content_store "Validates presence of draft content"
-              -> content_store "Validates presence of published content"
+              -> content_store_container.content_store "Pushes published content to the draft store"
+              -> content_store_container.content_store "Pushes published content to the published store"
+              -> content_store_container.content_store "Validates presence of draft content"
+              -> content_store_container.content_store "Validates presence of published content"
+
               -> router_container.router_api "Validates presence of routes"
-              -> rabbitmq "Broadcasts publishing events"
+              -> event_queue "Broadcasts publishing events"
+            }
+          }
+
+          email_alert_service = container "Email Alert Service" "Sends email alerts to the public for GOV.UK"{
+            tags QueryOwnedByPublishing
+
+            database = component "PostgreSQL DB" "Stores subscribers, subscriptions, and messages" "Postgres" Database
+            redis = component "Sidekiq store" "Store for sidekiq jobs" "Redis" Database
+            sent_message_store = component "Sent message store" "Stores sent messages" "Redis" Database
+
+            email_alert_api = component "Email alert API" "Sends email alerts to the public for GOV.UK" "Rails" {
+              -> database
+              -> redis
+
+              -> account_api "Get email of logged-in user"
+            }
+
+            email_alert_frontend = component "Email alert frontend" "Serves email alert signup pages on GOV.UK" "Rails" {
+              -> publishing_api_container.publishing_api
+              -> email_alert_api "Manage subscriptions"
+              -> content_store_container.content_store "Get content items"
+            }
+
+            email_alert_service_consumer = component "Email alert service" "Message queue consumer that triggers email alerts for GOV.UK" "Rails" {
+              -> publishing_api_container.event_queue "Listens for major change events"
+              -> sent_message_store "Records sent messages"
+              -> email_alert_api "Triggers an email alert"
+            }
+
+            email_alert_monitoring = component "Email alert monitoring" "Script run by Jenkins that verifies GOV.UK email alerts have been sent" "Ruby" {
+              // TODO
             }
           }
 
@@ -94,11 +144,27 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
         
 
           group "Publishing apps" {
-            whitehall = container "Whitehall" "The Whitehall publishing application" "Rails" {
+            whitehall_container = container "Whitehall" "The Whitehall publishing application" {
               url https://github.com/alphagov/whitehall
-              -> publishing_api_container.publishing_api "Create & update content"
-              -> link_checker_api "Create & get batches"
-              -> maslow "Get needs"
+              
+              mysql = component "MySQL DB" "" "MySQL" Database
+              redis = component "Redis" "Taxonomy cache" "Redis" Database
+              s3 = component "S3" "Store for images, videos & file attachments" "AWS S3" 
+
+              whitehall = component "Whitehall app" "" "Rails" {
+                -> mysql
+                -> redis
+                -> s3
+
+                -> asset_manager "Uploads and removes assets attached to documents"
+                -> content_store_container.content_store "Upload content to the content store (TODO: not all content?)"
+                -> email_alert_service.email_alert_api "Email notifications for 'World location' updates"
+                -> link_checker_api "Create & get batches"
+                -> maslow "Get needs"
+                -> publishing_api_container.publishing_api "Create & update content"
+                -> router_container.router_api "Adds and removes routes"
+                -> search.search_api "TODO rummages"
+              }
             }
 
             publisher = container "Mainstream" "The Mainstream content publishing app" "Rails" {
@@ -160,7 +226,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
           -> publishing_platform.travel_advice_publisher "Creates and manages mainstream content"
           -> publishing_platform.service_manual_publisher "Creates and manages mainstream content"
           -> publishing_platform.manuals_publisher "Creates and manages mainstream content"
-          -> publishing_platform.whitehall "Creates and manages mainstream content"
+          -> publishing_platform.whitehall_container.whitehall "Creates and manages mainstream content"
         }
       }
 
@@ -175,7 +241,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
     // Things outside GDS
 
     external_content_designer = person "Content author (non-GDS)" {
-      -> publishing_platform.whitehall "Creates and manages content"
+      -> publishing_platform.whitehall_container.whitehall "Creates and manages content"
       -> publishing_platform.content_publisher.content_publisher_app "Creates and manages TODO content"
     }
 
