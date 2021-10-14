@@ -20,13 +20,19 @@ views {
       autoLayout
     }
 
-    /*
-     * Component views
-     */
-    component publishing_platform.signon {
+    systemContext signon {
       include *
       autoLayout
     }
+    
+    systemContext email_alert_service {
+      include *
+      autoLayout
+    }
+
+    /*
+     * Component views
+     */
 
     component publishing_platform.content_publisher {
       include *
@@ -38,7 +44,7 @@ views {
       autoLayout
     }
 
-    component publishing_platform.router_container {
+    component govuk_frontend.router_container {
       include *
       autoLayout
     }
@@ -48,10 +54,7 @@ views {
       autoLayout
     }
 
-    component publishing_platform.email_alert_service {
-      include *
-      autoLayout
-    }
+    
 
     dynamic publishing_platform.publishing_api_container "PublishingPlatform-ProcessFlow-PublishingAPI-Versions" "Usage of previous_version in drafts" {
       publishing_platform.content_publisher -> publishing_platform.publishing_api_container.publishing_api "PUT /v2/content/:content_id"
@@ -89,7 +92,7 @@ views {
 
     dynamic publishing_platform "PublishingPlatform-ProcessFlow-News-Content" "The application flow for a new page on GOV.UK" {
       // <identifier> -> <identifier> [description] [technology]
-      content_designer  -> publishing_platform.signon "Logs in"
+      content_designer  -> signon "Logs in"
       content_designer  -> publishing_platform.content_publisher "Writes a news article"
       content_designer  -> publishing_platform.content_publisher "Adds topic(s)"
       content_designer  -> publishing_platform.content_publisher "Adds lead image"
@@ -98,12 +101,12 @@ views {
       content_designer  -> publishing_platform.content_publisher "Clicks 'Preview'"
       publishing_platform.content_publisher -> publishing_platform.asset_manager "Uploads draft assets"
       publishing_platform.content_publisher -> publishing_platform.publishing_api_container "Saves draft"
-      publishing_platform.publishing_api_container -> publishing_platform.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
+      publishing_platform.publishing_api_container -> govuk_frontend.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
 
       content_designer  -> publishing_platform.content_publisher "Clicks 'Publish'"
       publishing_platform.content_publisher -> publishing_platform.asset_manager "Uploads published assets"
       publishing_platform.content_publisher -> publishing_platform.publishing_api_container "Sends published edition"
-      publishing_platform.publishing_api_container -> publishing_platform.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
+      publishing_platform.publishing_api_container -> govuk_frontend.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
     }
 
     !include styles.dsl
