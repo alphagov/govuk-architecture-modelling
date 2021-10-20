@@ -1,7 +1,7 @@
 all: clean build
 
 clean:
-	rm plantuml/* diagrams/*
+	rm -f plantuml/* diagrams/*
 
 build:
 	structurizr-cli export -workspace src/workspace.dsl -format plantuml -o plantuml
