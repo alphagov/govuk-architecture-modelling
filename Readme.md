@@ -1,23 +1,40 @@
 # GOV.UK architecture as code
 
-This project models the services and boundaries of GOV.UK using C4 and Structurizr. 
+This project models the services and boundaries of GOV.UK using C4 and Structurizr.
 
-**Important!** This is a scratch-pad for modelling the organisation as I explore the applications within GOV.UK. It's a tool for my learning, and shouldn't be taken to be accurate!
+**Important!** This is a scratch-pad for exploration and modelling the organisation and applications within GOV.UK. It's a tool for learning, and shouldn't be taken to be accurate or in any way 'official'
 
 # Prerequisites
 
 - PlantUML
-- Structurizr CLI
+- Structurizr CLI (or Docker)
+
+## Mac OSX
 
 ```bash
 brew install structurizr-cli plantuml
 ```
 
+## Ubuntu
+
+The `structurizr-cli` binary is not available on Ubuntu - you'll need to run the provided Docker container instead.
+So you'll need:
+
+- Docker
+
+To download the `structurizr/cli` docker container, run `make docker-pull`
+When running make tasks, use `docker` as the first task in the list, and the `structurizr-cli` commands will be run via the docker container.
+E.g.
+
+Without docker: `make build`
+With docker: `make docker build`
+
+
 # Generating diagrams
 
 - `make`: remove plantuml and diagrams, and generate new ones.
-- `make build`: generate PlantUML output and generate PNG diagrams.
-- `make clean`: remove generated outputfrom from `plantuml/` and `diagrams/`.
+- `make (docker) build`: generate PlantUML output and generate PNG diagrams.
+- `make (docker) clean`: remove generated outputfrom from `plantuml/` and `diagrams/`.
 
 # Pushing diagrams to Structurizr
 
