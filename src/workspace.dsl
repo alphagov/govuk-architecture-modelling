@@ -245,6 +245,12 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
                 -> notify "Emails exported CSV link to user"
               }
             }
+
+            special_route_publisher = container "Special route publisher" "Publishes special routes on GOV.UK from a hard-coded YAML file" "Rake" {
+              url "https://github.com/alphagov/special-route-publisher"
+
+              -> publishing_api_container.publishing_api "Publishes and unpublishes routes"
+            }
           }
         }
       }
