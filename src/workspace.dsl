@@ -220,6 +220,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               -> publishing_api_container.publishing_api "Create & update content"
               -> link_checker_api "Create & get batches"
               -> maslow "Retrieve needs (? TODO validate, maybe already removed)"
+              -> email_alert_service.email_alert_api "Sends alerts"
             }
 
             collections_publisher = container "Collections Publisher" "Publishes step by steps, /browse pages, and legacy /topic pages on GOV.UK" "Rails" {
