@@ -4,28 +4,58 @@ views {
       autoLayout
     }
 
+    # systemContext govuk_frontend {
+    #   include *
+    #   autoLayout
+    # }
 
-    systemContext publishing_platform {
-      include *
-      autoLayout
-    }
+    # systemContext search {
+    #   include *
+    #   autoLayout
+    # }
+
+    # systemContext publishing_platform {
+    #   include *
+    #   autoLayout
+    # }
+
+    # systemContext signon {
+    #   include *
+    #   autoLayout
+    # }
+    
+    # systemContext email_alert_service {
+    #   include *
+    #   autoLayout
+    # }
 
 
     /*
      * Container views
      */
 
+
+    container govuk_frontend {
+      include *
+      autoLayout
+    }
+
+    container search {
+      include *
+      autoLayout
+    }
+
     container publishing_platform {
       include *
       autoLayout
     }
 
-    systemContext signon {
+    container signon {
       include *
       autoLayout
     }
     
-    systemContext email_alert_service {
+    container email_alert_service {
       include *
       autoLayout
     }
