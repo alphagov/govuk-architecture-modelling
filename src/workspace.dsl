@@ -81,17 +81,6 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               -> database "Read routes and backends into in-memory store"
             }
           }
-
-          content_store_container = container "Content Store" "TODO" {
-            url https://github.com/alphagov/content-store
-
-            database = component "MongoDB" "Store for content" "MongoDB" Database
-            content_store = component "Content Store" "" "Rails" {
-              -> database "Stores and retrieves content"
-              -> govuk_frontend.router_container.router_api "Add and delete routes and rendering apps"
-              -> govuk_frontend.router_container.router_api "Look up routes to idenfity inconsistent redirects"
-            }
-          }
         }        
       }
 
@@ -107,6 +96,17 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
           # What does "core mean"... it's the basic building blocks and fundamental workflow engine... but not the 
           # things that are likely to change between publishing apps...
           group "Publishing Core*"
+            content_store_container = container "Content Store" "TODO" {
+              url https://github.com/alphagov/content-store
+
+              database = component "MongoDB" "Store for content" "MongoDB" Database
+              content_store = component "Content Store" "" "Rails" {
+                -> database "Stores and retrieves content"
+                -> govuk_frontend.router_container.router_api "Add and delete routes and rendering apps"
+                -> govuk_frontend.router_container.router_api "Look up routes to idenfity inconsistent redirects"
+              }
+            }
+
             asset_manager = container "Asset Manager" "Manages uploaded assets (images, PDFs etc.) for applications on GOV.UK" "Rails" {
               url https://github.com/alphagov/asset-manager
             }
@@ -129,10 +129,10 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
                 -> redis
                 -> s3
 
-                -> govuk_frontend.content_store_container.content_store "Pushes published content to the draft store"
-                -> govuk_frontend.content_store_container.content_store "Pushes published content to the published store"
-                -> govuk_frontend.content_store_container.content_store "Validates presence of draft content"
-                -> govuk_frontend.content_store_container.content_store "Validates presence of published content"
+                -> content_store_container.content_store "Pushes published content to the draft store"
+                -> content_store_container.content_store "Pushes published content to the published store"
+                -> content_store_container.content_store "Validates presence of draft content"
+                -> content_store_container.content_store "Validates presence of published content"
 
                 -> govuk_frontend.router_container.router_api "Validates presence of routes"
                 -> event_queue "Broadcasts publishing events"
@@ -165,7 +165,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
                 -> s3
 
                 -> asset_manager "Uploads and removes assets attached to documents"
-                -> govuk_frontend.content_store_container.content_store "Upload content to the content store (TODO: not all content?)"
+                -> content_store_container.content_store "Upload content to the content store (TODO: not all content?)"
                 -> email_alert_service.email_alert_api "Email notifications for 'World location' updates"
                 -> link_checker_api "Create & get batches"
                 -> maslow "Get needs"
@@ -259,8 +259,8 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
     }
 
     email_alert_service.email_alert_frontend -> publishing_platform.publishing_api_container.publishing_api
-    email_alert_service.email_alert_frontend -> govuk_frontend.content_store_container.content_store "Get content items"
-    email_alert_service.email_alert_service_consumer -> publishing_platform.event_queue "Listens for major change events"
+    email_alert_service.email_alert_frontend -> publishing_platform.content_store_container.content_store "Get content items"
+    publishing_platform.event_queue -> email_alert_service.email_alert_service_consumer "Listens for major change events"
   }
 
   # Relationships that aren't possible to create in the source's scope, because of its
