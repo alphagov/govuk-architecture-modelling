@@ -309,12 +309,12 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               -> database "Read routes and backends into in-memory store"
             }
           }
-        }
 
-        // Sends PURGE HTTP requests to Fastly and Varnish to clear the caches for a URL
-        // TODO link up to Fastly and Varnish caches once modelled
-        cache_clearing_service = softwareSystem "Cache clearing service" "Rails" {
-          publishing_platform.event_queue -> this "Listens for change events"  
+          // Sends PURGE HTTP requests to Fastly and Varnish to clear the caches for a URL
+          // TODO link up to Fastly and Varnish caches once modelled
+          cache_clearing_service = container "Cache clearing service" "Rails" {
+            publishing_platform.event_queue -> this "Listens for change events"  
+          }
         }
       }
 
