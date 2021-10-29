@@ -8,7 +8,10 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
     // Dependencies outside GOV.UK
     splunk = softwareSystem "Splunk" "Log aggregator for Cyber/Security groups"
     notify = softwareSystem "GOV.UK Notify"
-
+    google_analytics = softwareSystem "Google Analytics (GOV.UK properties)"
+    esd_standards_site = softwareSystem "ESD Standards website" {
+      url "https://standards.esd.org.uk"
+    }
 
     enterprise GOVUK {
       group "Accounts" {
@@ -59,32 +62,6 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
         }
       }
 
-      group "Public Experience" {
-        search = softwareSystem "GOV.UK Search " {
-          search_admin = container "Search Admin" "TODO"
-          search_analytics = container "Search Analytics" "TODO"
-          search_api = container "Search API" "TODO"
-          search_performance_explorer = container "Search Performance Explorer" "TODO"
-        }
-
-        govuk_frontend = softwareSystem "GOV.UK website" {
-          router_container = container "Router" "Maps paths to content on GOV.UK to publishing apps" {
-            tags QueryArchitecturalSmell
-
-            database = component "MongoDB" "Fast store for routes" "MongoDB" Database
-
-            // TODO: what is a "backend"? It includes email-campaign-frontend, multipage-frontend, search-api
-            router_api = component "Router API" "API for updating the routes used by the router on GOV.UK" {
-              -> database "Create, read, update and delete routes"
-            }
-
-            router = component "Router" "Router in front on GOV.UK to proxy to backend servers on the single domain" {
-              -> database "Read routes and backends into in-memory store"
-            }
-          }
-        }        
-      }
-
       group "Publishing" {
 
         publishing_platform = softwareSystem "Publishing Platform" {
@@ -103,8 +80,6 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               database = component "MongoDB" "Store for content" "MongoDB" Database
               content_store = component "Content Store" "" "Rails" {
                 -> database "Stores and retrieves content"
-                -> govuk_frontend.router_container.router_api "Add and delete routes and rendering apps"
-                -> govuk_frontend.router_container.router_api "Look up routes to idenfity inconsistent redirects"
               }
             }
 
@@ -135,7 +110,6 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
                 -> content_store_container.content_store "Validates presence of draft content"
                 -> content_store_container.content_store "Validates presence of published content"
 
-                -> govuk_frontend.router_container.router_api "Validates presence of routes"
                 -> event_queue "Broadcasts publishing events"
               }
             }
@@ -171,8 +145,6 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
                 -> link_checker_api "Create & get batches"
                 -> maslow "Get needs"
                 -> publishing_api_container.publishing_api "Create & update content"
-                -> govuk_frontend.router_container.router_api "Adds and removes routes"
-                -> search.search_api "TODO rummages"
               }
             }
 
@@ -252,6 +224,73 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               -> publishing_api_container.publishing_api "Publishes and unpublishes routes"
             }
           }
+
+          short_url_manager_container = container "Short URL manager" {
+            tags QueryOwnedByPublishing
+
+            database = component "MongoDB" "Stores short URLs, requests for short URLs, organisations and user permissions" "Mongo" Database
+            redis = component "Redis" "Store for sidekiq jobs" "Redis" Database
+
+            short_url_manager = component "Short URL manager" "" "Rails" {
+              url "https://github.com/alphagov/short-url-manager"
+
+              -> database
+              -> redis
+
+              -> publishing_api_container.publishing_api "Creates, updates and publishes short URLs as content items"
+              -> notify "Emails user updates on status of short URL request"
+            }
+          }
+        }
+      }
+
+      group "Public Experience" {
+        mapit = softwareSystem "MapIT" "A RESTful API for looking up postcodes, council boundaries, etc."
+
+        local_links_manager_container = softwareSystem "Local links manager" "Admin interface for managing Local Authorities' links including all their services and interactions." {
+          url https://github.com/alphagov/local-links-manager
+
+          database = container "PostgreSQL DB" "Stores local authorities, services, links and user permissions" "Postgres" Database
+          redis = container "Redis" "Local links manager locks" "Redis" Database
+
+          content_publisher_app = container "Content Publisher app" "" "Rails" {
+            -> database
+            -> redis
+            -> google_analytics "Exports bad links & status, and posts link events"
+            -> mapit "Look up council from postcode"
+            -> esd_standards_site "Import LGSL codes"
+            -> publishing_platform.publishing_api_container.publishing_api "Submits Local Authority redirects"
+          }
+        }
+
+        search = softwareSystem "GOV.UK Search " {
+          search_admin = container "Search Admin" "TODO"
+          search_analytics = container "Search Analytics" "TODO"
+          search_api = container "Search API" "TODO"
+          search_performance_explorer = container "Search Performance Explorer" "TODO"
+        }
+
+        govuk_frontend = softwareSystem "GOV.UK website" {
+          router_container = container "Router" "Maps paths to content on GOV.UK to publishing apps" {
+            tags QueryArchitecturalSmell
+
+            database = component "MongoDB" "Fast store for routes" "MongoDB" Database
+
+            // TODO: what is a "backend"? It includes email-campaign-frontend, multipage-frontend, search-api
+            router_api = component "Router API" "API for updating the routes used by the router on GOV.UK" {
+              -> database "Create, read, update and delete routes"
+            }
+
+            router = component "Router" "Router in front on GOV.UK to proxy to backend servers on the single domain" {
+              -> database "Read routes and backends into in-memory store"
+            }
+          }
+        }
+
+        // Sends PURGE HTTP requests to Fastly and Varnish to clear the caches for a URL
+        // TODO link up to Fastly and Varnish caches once modelled
+        cache_clearing_service = softwareSystem "Cache clearing service" "Rails" {
+          publishing_platform.event_queue -> this "Listens for change events"  
         }
       }
 
@@ -286,13 +325,20 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
       -> external_hmrc_cms "Creates and manages HMRC manuals"
     }
 
+    # Relationships that aren't possible to create in the source's scope, because of its
+    # location in the file
+    # TODO revisit these to find a better way to model them
+    publishing_platform.content_store_container.content_store -> govuk_frontend.router_container.router_api "Add and delete routes and rendering apps"
+    publishing_platform.content_store_container.content_store -> govuk_frontend.router_container.router_api "Look up routes to idenfity inconsistent redirects"
+    publishing_platform.publishing_api_container.publishing_api -> govuk_frontend.router_container.router_api "Validates presence of routes"
+    publishing_platform.whitehall_container.whitehall -> govuk_frontend.router_container.router_api "Adds and removes routes"
+    publishing_platform.whitehall_container.whitehall -> search.search_api "TODO rummages"
+
     email_alert_service.email_alert_frontend -> publishing_platform.publishing_api_container.publishing_api
     email_alert_service.email_alert_frontend -> publishing_platform.content_store_container.content_store "Get content items"
     publishing_platform.event_queue -> email_alert_service.email_alert_service_consumer "Listens for major change events"
   }
 
-  # Relationships that aren't possible to create in the source's scope, because of its
-  # location in the file
   
   !include views.dsl
     
