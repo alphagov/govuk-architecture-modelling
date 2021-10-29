@@ -270,6 +270,10 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
           search_performance_explorer = container "Search Performance Explorer" "TODO"
         }
 
+        smart_answers = softwareSystem "Smart answers" {
+          url "https://github.com/alphagov/smart-answers"
+        }
+        
         govuk_frontend = softwareSystem "GOV.UK website" {
           router_container = container "Router" "Maps paths to content on GOV.UK to publishing apps" {
             tags QueryArchitecturalSmell
