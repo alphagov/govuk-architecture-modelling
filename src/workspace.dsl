@@ -14,7 +14,6 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
         // TODO Signon calls out to Gds:API organisations. Which app is this?
         signon = softwareSystem "Signon" "Single sign-on service for GOV.UK" {
           url https://github.com/alphagov/signon
-          tags QueryOwnedByPublishing
 
           mysql = container "MySQL DB" "Persists user data" "MySQL" Database
           redis = container "Redis" "Store for sidekiq jobs" "Redis" Database
@@ -69,7 +68,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
 
         govuk_frontend = softwareSystem "GOV.UK website" {
           router_container = container "Router" "Maps paths to content on GOV.UK to publishing apps" {
-            tags QueryOwnedByPublishing QueryArchitecturalSmell
+            tags QueryArchitecturalSmell
 
             database = component "MongoDB" "Fast store for routes" "MongoDB" Database
 
@@ -100,13 +99,9 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
 
         publishing_platform = softwareSystem "Publishing Platform" {
           
-          
-
-          
-
           maslow = container "Maslow" "Create and manage user needs" "Rails" {
             url https://github.com/alphagov/maslow
-            tags QueryOwnedByPublishing, QueryCandidateForDeprecation
+            tags QueryCandidateForDeprecation
           }
 
           # What does "core mean"... it's the basic building blocks and fundamental workflow engine... but not the 

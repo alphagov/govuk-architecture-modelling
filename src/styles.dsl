@@ -22,10 +22,6 @@ styles {
     background #FFFF00
   }
 
-  element QueryOwnedByPublishing {
-    background #FFA500
-  }
-
   # element QueryArchitecturalSmell {
   #   background #B5651D
   # }
