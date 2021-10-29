@@ -51,7 +51,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
             -> email_alert_api "Manage subscriptions"
           }
 
-          email_alert_service_consumer = container "Email alert service" "Message queue consumer that triggers email alerts for GOV.UK" "Rails" {
+          publishing_event_email_alert_listenener = container "Email alert service" "Message queue consumer that triggers email alerts for GOV.UK" "Rails" {
             -> sent_message_store "Records sent messages"
             -> email_alert_api "Triggers an email alert"
           }
@@ -334,13 +334,13 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
     # TODO revisit these to find a better way to model them
     publishing_platform.content_store_container.content_store -> govuk_frontend.router_container.router_api "Add and delete routes and rendering apps"
     publishing_platform.content_store_container.content_store -> govuk_frontend.router_container.router_api "Look up routes to idenfity inconsistent redirects"
+    publishing_platform.event_queue -> email_alert_service.publishing_event_email_alert_listenener "Listens for major change events"
     publishing_platform.publishing_api_container.publishing_api -> govuk_frontend.router_container.router_api "Validates presence of routes"
     publishing_platform.whitehall_container.whitehall -> govuk_frontend.router_container.router_api "Adds and removes routes"
     publishing_platform.whitehall_container.whitehall -> search.search_api "TODO rummages"
 
     email_alert_service.email_alert_frontend -> publishing_platform.publishing_api_container.publishing_api
     email_alert_service.email_alert_frontend -> publishing_platform.content_store_container.content_store "Get content items"
-    publishing_platform.event_queue -> email_alert_service.email_alert_service_consumer "Listens for major change events"
   }
 
   
