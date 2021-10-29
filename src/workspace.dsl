@@ -268,6 +268,26 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
           search_analytics = container "Search Analytics" "TODO"
           search_api = container "Search API" "TODO"
           search_performance_explorer = container "Search Performance Explorer" "TODO"
+
+          // TODO links & components
+          container "Search relevance tool" "Tool to score GOV.UK search results for relevance"{
+            url "https://github.com/alphagov/govuk-search-relevance-tool"
+          }
+
+          // TODO links & components
+          container "Search admin" {
+            url "https://github.com/alphagov/search-admin"
+          }
+
+          // TODO links & components
+          container "Search analytics" {
+            url "https://github.com/alphagov/search-analytics"
+          }
+
+          // TODO links & components
+          container "Search performance explorer" {
+            url "https://github.com/alphagov/search-performance-explorer"
+          }
         }
 
         smart_answers = softwareSystem "Smart answers" {
