@@ -7,6 +7,7 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
   model {
     // Dependencies outside GOV.UK
     splunk = softwareSystem "Splunk" "Log aggregator for Cyber/Security groups"
+    notify = softwareSystem "GOV.UK Notify"
 
 
     enterprise GOVUK {
@@ -222,6 +223,27 @@ workspace "GOV.UK" "The GOV.UK programme within GDS" {
               url https://github.com/alphagov/collections-publisher
               -> publishing_api_container.publishing_api "Create & update content"
               -> link_checker_api "Create & get batches"
+            }
+
+            specialist_publisher_container = container "Specialist Publisher" "Publishing App for Specialist Documents." "Rails" {
+              url https://github.com/alphagov/specialist-publisher
+
+              database = component "MongoDB" "TODO" "Mongo" Database
+              redis = component "Redis" "Store for sidekiq jobs" "Redis" Database
+              s3 = component "S3" "Store generated CSV list of documents" "AWS S3" 
+
+              specialist_publisher = component "Specialist Publisher" "" "Rails" {
+
+                -> database
+                -> redis
+                -> s3
+
+                -> publishing_api_container.publishing_api "Put content, link finders, and publish"
+                -> asset_manager "Upload assets"
+
+                -> email_alert_service.email_alert_api "Sends alerts about content changes"
+                -> notify "Emails exported CSV link to user"
+              }
             }
           }
         }
