@@ -4,28 +4,58 @@ views {
       autoLayout
     }
 
+    # systemContext govuk_frontend {
+    #   include *
+    #   autoLayout
+    # }
 
-    systemContext publishing_platform {
-      include *
-      autoLayout
-    }
+    # systemContext search {
+    #   include *
+    #   autoLayout
+    # }
+
+    # systemContext publishing_platform {
+    #   include *
+    #   autoLayout
+    # }
+
+    # systemContext signon {
+    #   include *
+    #   autoLayout
+    # }
+    
+    # systemContext email_alert_service {
+    #   include *
+    #   autoLayout
+    # }
 
 
     /*
      * Container views
      */
 
+
+    container govuk_frontend {
+      include *
+      autoLayout
+    }
+
+    container search {
+      include *
+      autoLayout
+    }
+
     container publishing_platform {
       include *
       autoLayout
     }
 
-    systemContext signon {
+    container signon {
       include *
       autoLayout
     }
     
-    systemContext email_alert_service {
+    container email_alert_service {
       include *
       autoLayout
     }
@@ -101,12 +131,12 @@ views {
       content_designer  -> publishing_platform.content_publisher "Clicks 'Preview'"
       publishing_platform.content_publisher -> publishing_platform.asset_manager "Uploads draft assets"
       publishing_platform.content_publisher -> publishing_platform.publishing_api_container "Saves draft"
-      publishing_platform.publishing_api_container -> govuk_frontend.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
+      publishing_platform.publishing_api_container -> publishing_platform.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
 
       content_designer  -> publishing_platform.content_publisher "Clicks 'Publish'"
       publishing_platform.content_publisher -> publishing_platform.asset_manager "Uploads published assets"
       publishing_platform.content_publisher -> publishing_platform.publishing_api_container "Sends published edition"
-      publishing_platform.publishing_api_container -> govuk_frontend.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
+      publishing_platform.publishing_api_container -> publishing_platform.content_store_container "TODO ? Submits new/updated manual, with hard-coded publisher app & frontend"
     }
 
     !include styles.dsl
